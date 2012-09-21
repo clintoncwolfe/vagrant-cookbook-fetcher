@@ -92,15 +92,46 @@ class CookbookFetcher
             # pull
             Dir.chdir(info[:dir]) do
               # TODO ignores git creds
-              cmd = "git checkout #{info[:branch]}"
+              cmd = "git remote set-url origin #{info[:repo]}"
               unless system cmd then raise "Could not '#{cmd}'" end
-              cmd = "git pull"
+              cmd = "git fetch origin"
               unless system cmd then raise "Could not '#{cmd}'" end
+              local_branch = `git rev-parse --verify --symbolic-full-name #{info[:branch]} 2> /dev/null`
+              # no local branch
+              if ! $?.success? then
+                remote_branch = `git rev-parse --verify --symbolic-full-name origin/#{info[:branch]} 2> /dev/null`
+                unless $?.success? then raise "Unable to find branch or commit #{info[:branch]}" end
+                cmd = "git checkout -b #{info[:branch]} origin/#{info[:branch]}"
+                unless system cmd then raise "Could not '#{cmd}'" end
+              # no branch
+              elsif local_branch.empty? then
+                cmd = "git checkout #{info[:branch]}"
+                unless system cmd then raise "Could not '#{cmd}'" end
+              # local branch already exists
+              else
+                cmd = "git checkout #{info[:branch]}"
+                unless system cmd then raise "Could not '#{cmd}'" end
+                cmd = "git merge origin/#{info[:branch]}"
+                unless system cmd then raise "Could not '#{cmd}'" end
+              end
             end
           else
             # clone
-            cmd = "git clone -b #{info[:branch]} #{info[:repo]} #{info[:dir]}"
+            # can't use --branch because it won't work with commit ids
+            cmd = "git clone --no-checkout #{info[:repo]} #{info[:dir]}"
             unless system cmd then raise "Could not '#{cmd}'" end
+            Dir.chdir(info[:dir]) do
+              remote_branch=`git rev-parse --verify -q origin/#{info[:branch]} 2> /dev/null`
+              # branch
+              if $?.success? then
+                cmd = "git checkout -B #{info[:branch]} origin/#{info[:branch]}"
+                unless system cmd then raise "Could not '#{cmd}'" end
+              #commit
+              else
+                cmd = "git checkout #{info[:branch]}"
+                unless system cmd then raise "Could not '#{cmd}'" end
+              end
+            end
           end
         else
           raise "Unsupported VCS '#{info[:vcs]}' in checkout list for entry '#{dir}'"
