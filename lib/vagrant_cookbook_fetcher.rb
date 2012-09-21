@@ -119,8 +119,16 @@ class CookbookFetcher
       # Create/clear the subdirs
       things_to_link.each do |thing|
         if !Dir.exists?(thing) then Dir.mkdir(thing) end
-        Dir.foreach(thing) do |file|
-          if FileTest.symlink?(file) then File.delete(file) end
+        if (thing == "data_bags") then
+          Dir.foreach(thing) do |dbag_dir|
+            Dir.foreach(thing + '/' + dbag_dir) do |file|
+              if FileTest.symlink?(file) then File.delete(file) end
+            end
+          end
+        else
+          Dir.foreach(thing) do |file|
+            if FileTest.symlink?(file) then File.delete(file) end
+          end
         end
       end
     end
@@ -132,11 +140,26 @@ class CookbookFetcher
         co_thing_dir = "checkouts/#{checkout_dir}/#{thing}"
         combined_dir = "combined/#{thing}"
         if Dir.exists?(co_thing_dir) then
-          Dir.entries(co_thing_dir).grep(/\.(rb|json)$/).each do |file|
-            # Under vagrant, we see this directory as /vagrant/checkouts/foo/role/bar.rb
-            # Use -f so later checkouts can override earlier ones
-            cmd = "ln -sf /vagrant/#{co_thing_dir}/#{file} combined/#{thing}/#{file}"
-            unless system cmd then raise "Could not '#{cmd}'" end
+          if (thing == "data_bags") then
+            Dir.foreach(co_thing_dir) do |co_dbag_dir|
+              next unless File.directory?(co_thing_dir + '/' + co_dbag_dir)
+              next if co_dbag_dir.start_with?('.')
+              combined_dbag_dir = combined_dir + '/' + co_dbag_dir
+              if !Dir.exists?(combined_dbag_dir) then Dir.mkdir(combined_dbag_dir) end
+              Dir.entries(co_thing_dir + '/' + co_dbag_dir).grep(/\.(rb|json)$/).each do |file|
+                # Under vagrant, we see this directory as /vagrant/checkouts/<checkout>/data_bags/<dbag>/<dbag_entry.json>
+                # Use -f so later checkouts can override earlier ones
+                cmd = "ln -sf /vagrant/#{co_thing_dir + '/' + co_dbag_dir}/#{file} combined/#{thing}/#{co_dbag_dir}/#{file}"
+                unless system cmd then raise "Could not '#{cmd}'" end
+              end
+            end
+          else
+            Dir.entries(co_thing_dir).grep(/\.(rb|json)$/).each do |file|
+              # Under vagrant, we see this directory as /vagrant/checkouts/foo/role/bar.rb
+              # Use -f so later checkouts can override earlier ones
+              cmd = "ln -sf /vagrant/#{co_thing_dir}/#{file} combined/#{thing}/#{file}"
+              unless system cmd then raise "Could not '#{cmd}'" end
+            end
           end
         end
       end
