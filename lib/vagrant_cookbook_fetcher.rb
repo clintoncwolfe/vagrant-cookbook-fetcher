@@ -96,11 +96,11 @@ class CookbookFetcher
               unless system cmd then raise "Could not '#{cmd}'" end
               cmd = "git fetch origin"
               unless system cmd then raise "Could not '#{cmd}'" end
-              local_branch = `git rev-parse --verify --symbolic-full-name #{info[:branch]} 2> /dev/null`
+              local_branch = `git rev-parse --verify --symbolic-full-name #{info[:branch]} 2> /dev/null`.rstrip
               # no local branch
               if ! $?.success? then
-                remote_branch = `git rev-parse --verify --symbolic-full-name origin/#{info[:branch]} 2> /dev/null`
-                unless $?.success? then raise "Unable to find branch or commit #{info[:branch]}" end
+                cmd = "git rev-parse --verify -q --symbolic-full-name origin/#{info[:branch]}"
+                unless system cmd then raise "Could not find branch or commit #{info[:branch]}" end
                 cmd = "git checkout -b #{info[:branch]} origin/#{info[:branch]}"
                 unless system cmd then raise "Could not '#{cmd}'" end
               # no branch
@@ -121,11 +121,17 @@ class CookbookFetcher
             cmd = "git clone --no-checkout #{info[:repo]} #{info[:dir]}"
             unless system cmd then raise "Could not '#{cmd}'" end
             Dir.chdir(info[:dir]) do
-              remote_branch=`git rev-parse --verify -q origin/#{info[:branch]} 2> /dev/null`
+              cmd = "git rev-parse --verify -q origin/#{info[:branch]}"
               # branch
-              if $?.success? then
-                cmd = "git checkout -B #{info[:branch]} origin/#{info[:branch]}"
-                unless system cmd then raise "Could not '#{cmd}'" end
+              if system cmd then
+                current_branch=`git symbolic-ref HEAD 2> /dev/null`.rstrip
+                if $?.success? && current_branch == "refs/heads/#{info[:branch]}" then
+                  cmd = "git checkout #{info[:branch]}"
+                  unless system cmd then raise "Could not '#{cmd}'" end
+                else
+                  cmd = "git checkout -B #{info[:branch]} origin/#{info[:branch]}"
+                  unless system cmd then raise "Could not '#{cmd}'" end
+                end
               #commit
               else
                 cmd = "git checkout #{info[:branch]}"
