@@ -1,0 +1,13 @@
+
+2012-09-25 0.0.6 Clinton Wolfe <clintoncwolfe at gmail dot com> 
+
+   * Add changelog
+
+   * Fix broken initial checkout bug introduced in 0.0.5 (Graham Knop)
+
+2012-09-21 0.0.5 Clinton Wolfe <clintoncwolfe at gmail dot com>
+
+   * Add ability to specify a commit, not just a branch, in checkout lists (Graham Knop)
+   
+   * Make databag combined symlinks properly descend one directory down (Clinton Wolfe)
+   
