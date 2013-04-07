@@ -1,8 +1,3 @@
-
-require 'pry'
-require 'pry-debugger'
-
-
 module CookbookFetcher
 
   # http://vagrantup.com/v1/docs/extending/configuration.html
@@ -26,22 +21,21 @@ module CookbookFetcher
       logger.warn "No config.cookbook_fetcher.url value found in Vagrantfile - skipping checkouts"
       return
     end
-
-    logger.info "Fetching checkout list from #{url}"
     
-    checkouts = CookbookFetcher.fetch_checkout_list url
-    CookbookFetcher.perform_checkouts checkouts
-    CookbookFetcher.update_links checkouts
+    checkouts = CookbookFetcher.fetch_checkout_list(url,logger)
+    CookbookFetcher.perform_checkouts(checkouts,logger)
+    CookbookFetcher.update_links(checkouts,logger)
   end
   module_function :perform_fetch
 
   # Utility method, fetches checkout list, parses it, 
   # and writes cookbook order to a file in the current working directory.
-  def fetch_checkout_list (url)
+  def fetch_checkout_list (url, logger)
     require 'open-uri'
     
     checkouts = { :by_dir => {}, :cookbook_list => [] } 
 
+    logger.info "Fetching checkout list from #{url}"
     open(url, {:ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE }) do |resp|
       resp.each do |line|
         line.chomp!
@@ -76,13 +70,13 @@ module CookbookFetcher
   # Utility method.  Based on a parsed checkout list, 
   # performs each of the checkouts, creating the checkouts/ directory in 
   # the current directory.
-  def perform_checkouts (checkouts)
+  def perform_checkouts (checkouts,logger)
 
     if !Dir.exists?("checkouts") then Dir.mkdir("checkouts") end
     
     Dir.chdir("checkouts") do  
       checkouts[:by_dir].each do |dir, info|
-        puts "Updating checkout '#{dir}'"
+        logger.info "Updating checkout '#{dir}'"
         if info[:vcs] == 'git' then
 
           if Dir.exists?(info[:dir]) then
@@ -147,9 +141,9 @@ module CookbookFetcher
   # Utility method - given a parsed checkout list, and assuming the checkout have
   # already been performed, creates the combined/ directory in the current directory,
   # and symlinks in the roles, nodes, etc.
-  def update_links (checkouts) 
+  def update_links (checkouts,logger) 
     things_to_link = ["roles", "nodes", "handlers", "data_bags", "specs"]
-    puts "Updating links to #{things_to_link.join(', ')}"
+    logger.info "Updating links to #{things_to_link.join(', ')}"
 
     if !Dir.exists?("combined") then Dir.mkdir("combined") end
     Dir.chdir("combined") do  
@@ -290,7 +284,7 @@ module CookbookFetcher
   class CheckoutCommand < Vagrant::Command::Base
     def execute
       Dir.chdir(@env.root_path) do
-        CookbookFetcher.perform_fetch(@env.config.global, @logger)
+        CookbookFetcher.perform_fetch(@env.config.global, @env.ui)
       end
     end
   end
