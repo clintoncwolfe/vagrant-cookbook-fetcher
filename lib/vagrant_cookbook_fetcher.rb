@@ -147,7 +147,7 @@ class CookbookFetcher
   end
 
   def update_links (checkouts) 
-    things_to_link = ["roles", "nodes", "handlers", "data_bags"]
+    things_to_link = ["roles", "nodes", "handlers", "data_bags", "specs"]
     puts "Updating links to #{things_to_link.join(', ')}"
 
     if !Dir.exists?("combined") then Dir.mkdir("combined") end
