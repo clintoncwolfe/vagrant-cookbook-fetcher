@@ -12,7 +12,8 @@ module CookbookFetcher
   end
   Vagrant.config_keys.register(:cookbook_fetcher) { CookbookFetcher::Config }
 
-  # Utility method - reads the config, fetches the checkout list, does the checkout, and does the crosslinks.
+  # Utility method - reads the config, fetches the checkout list, 
+  # does the checkout, and does the crosslinks.  Expects cwd to be the root_path.
   def perform_fetch (global_config, logger)
 
     unless global_config.cookbook_fetcher then
@@ -28,7 +29,6 @@ module CookbookFetcher
 
     logger.info "Fetching checkout list from #{url}"
     
-    # TODO cwd call
     checkouts = CookbookFetcher.fetch_checkout_list url
     CookbookFetcher.perform_checkouts checkouts
     CookbookFetcher.update_links checkouts
@@ -214,7 +214,9 @@ module CookbookFetcher
 
     def call(env)
       if !env[:global_config].cookbook_fetcher.disable then
-        CookbookFetcher.perform_fetch(env[:global_config], env[:ui])
+        Dir.chdir(env[:root_path]) do
+          CookbookFetcher.perform_fetch(env[:global_config], env[:ui])
+        end
       else
         env[:ui].info "Auto-checkout disabled, skipping"
       end
@@ -248,33 +250,33 @@ module CookbookFetcher
         solo_cfg = chef_solo.config
       
         # TODO - need cwd block
-
-        if solo_cfg.roles_path.nil? then
-          solo_cfg.roles_path = "combined/roles"
-        else
-          env[:ui].warn "Auto-checkout is keeping your custom chef-solo role path"
-        end
-
-        if solo_cfg.data_bags_path.nil? then
-          solo_cfg.data_bags_path = "combined/data_bags"
-        else
-          env[:ui].warn "Auto-checkout is keeping your custom chef-solo data_bags path"
-        end
-
-        # Cookbooks has a default
-        if solo_cfg.cookbooks_path === ["cookbooks", [:vm, "cookbooks"]] then
-          # Read from filesystem
-          if !File.exists?(".cookbook-order") then
-            env[:ui].error "Auto-checkout could find not a .cookbook-order file.  You need to run provision with autocheckout enabled at least once (or else specify your own cookbook path)"
+        Dir.chdir(env[:root_path]) do
+          if solo_cfg.roles_path.nil? then
+            solo_cfg.roles_path = "combined/roles"
+          else
+            env[:ui].warn "Auto-checkout is keeping your custom chef-solo role path"
           end
 
-          cbs = []
-          IO.readlines(".cookbook-order").each { |line| cbs.push line.chomp }
-          solo_cfg.cookbooks_path = cbs
-        else
-          env[:ui].warn "Auto-checkout is keeping your custom chef-solo cookbook path"
-        end
+          if solo_cfg.data_bags_path.nil? then
+            solo_cfg.data_bags_path = "combined/data_bags"
+          else
+            env[:ui].warn "Auto-checkout is keeping your custom chef-solo data_bags path"
+          end
 
+          # Cookbooks has a default
+          if solo_cfg.cookbooks_path === ["cookbooks", [:vm, "cookbooks"]] then
+            # Read from filesystem
+            if !File.exists?(".cookbook-order") then
+              env[:ui].error "Auto-checkout could find not a .cookbook-order file.  You need to run provision with autocheckout enabled at least once (or else specify your own cookbook path)"
+            end
+
+            cbs = []
+            IO.readlines(".cookbook-order").each { |line| cbs.push line.chomp }
+            solo_cfg.cookbooks_path = cbs
+          else
+            env[:ui].warn "Auto-checkout is keeping your custom chef-solo cookbook path"
+          end
+        end
       end
 
       # Continue daisy chain
@@ -287,7 +289,9 @@ module CookbookFetcher
 
   class CheckoutCommand < Vagrant::Command::Base
     def execute
-      CookbookFetcher.perform_fetch(@env.config.global, @logger)
+      Dir.chdir(@env.root_path) do
+        CookbookFetcher.perform_fetch(@env.config.global, @logger)
+      end
     end
   end
   Vagrant.commands.register(:checkout) { CookbookFetcher::CheckoutCommand }
