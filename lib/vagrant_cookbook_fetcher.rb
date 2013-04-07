@@ -1,49 +1,19 @@
 
-# http://vagrantup.com/v1/docs/extending/configuration.html
-class CookbookFetcherConfig < Vagrant::Config::Base
-  attr_accessor :url
-  attr_accessor :disable
-end
-Vagrant.config_keys.register(:cookbook_fetcher) { CookbookFetcherConfig }
+module CookbookFetcher
 
-
-# This is a Vagrant middleware plugin
-# http://vagrantup.com/v1/docs/extending/middleware.html
-
-class CookbookFetcher
-  def initialize(app, env)
-    @app = app
+  # http://vagrantup.com/v1/docs/extending/configuration.html
+  class Config < Vagrant::Config::Base
+    attr_accessor :url
+    attr_accessor :disable
   end
-
-  def call(env)
-
-    if !env[:global_config].cookbook_fetcher.disable then
-      if !env[:global_config].cookbook_fetcher.url.nil? then
-        fetch_checkouts env
-      else
-        env[:ui].warn "No URL set for auto-checkout, skipping"
-      end
-    else
-      env[:ui].info "Auto-checkout disabled, skipping"
-    end
-
-    # Continue daisy chain
-    @app.call(env) 
-  end
+  Vagrant.config_keys.register(:cookbook_fetcher) { CookbookFetcher::Config }
 
 
-  def fetch_checkouts (env) 
-    url = env[:global_config].cookbook_fetcher.url
-    env[:ui].info "Fetching checkout list from #{url}"
-    
-    checkouts = fetch_checkout_list url
-    perform_checkouts checkouts
-    update_links checkouts
-  end
-
+  # Utility method, fetches checkout list, parses it, 
+  # and writes cookbook order to a file in the current working directory.
   def fetch_checkout_list (url)
     require 'open-uri'
-
+    
     checkouts = { :by_dir => {}, :cookbook_list => [] } 
 
     open(url, {:ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE }) do |resp|
@@ -70,15 +40,16 @@ class CookbookFetcher
           File.open('.cookbook-order', 'w') do |f|
             f.print(checkouts[:cookbook_list].join("\n"))
           end
-
         end
       end
     end
-
     return checkouts
-
   end
+  module_function :fetch_checkout_list
 
+  # Utility method.  Based on a parsed checkout list, 
+  # performs each of the checkouts, creating the checkouts/ directory in 
+  # the current directory.
   def perform_checkouts (checkouts)
 
     if !Dir.exists?("checkouts") then Dir.mkdir("checkouts") end
@@ -103,11 +74,11 @@ class CookbookFetcher
                 unless system cmd then raise "Could not find branch or commit #{info[:branch]}" end
                 cmd = "git checkout -b #{info[:branch]} origin/#{info[:branch]}"
                 unless system cmd then raise "Could not '#{cmd}'" end
-              # no branch
+                # no branch
               elsif local_branch.empty? then
                 cmd = "git checkout #{info[:branch]}"
                 unless system cmd then raise "Could not '#{cmd}'" end
-              # local branch already exists
+                # local branch already exists
               else
                 cmd = "git checkout #{info[:branch]}"
                 unless system cmd then raise "Could not '#{cmd}'" end
@@ -132,7 +103,7 @@ class CookbookFetcher
                   cmd = "git checkout -B #{info[:branch]} origin/#{info[:branch]}"
                   unless system cmd then raise "Could not '#{cmd}'" end
                 end
-              #commit
+                #commit
               else
                 cmd = "git checkout #{info[:branch]}"
                 unless system cmd then raise "Could not '#{cmd}'" end
@@ -145,7 +116,11 @@ class CookbookFetcher
       end
     end
   end
+  module_function :perform_checkouts
 
+  # Utility method - given a parsed checkout list, and assuming the checkout have
+  # already been performed, creates the combined/ directory in the current directory,
+  # and symlinks in the roles, nodes, etc.
   def update_links (checkouts) 
     things_to_link = ["roles", "nodes", "handlers", "data_bags", "specs"]
     puts "Updating links to #{things_to_link.join(', ')}"
@@ -202,64 +177,99 @@ class CookbookFetcher
       end
     end  
   end
+  module_function :update_links
 
-
-end
-
-Vagrant.actions[:provision].insert(Vagrant::Action::General::Validate, CookbookFetcher)
-# Note that :up includes :start ( see https://github.com/mitchellh/vagrant/blob/master/lib/vagrant/action/builtin.rb )
-Vagrant.actions[:start].insert(Vagrant::Action::General::Validate, CookbookFetcher)
-
-
-# Injects auto-checkout-derived chef-solo config
-class CookbookFetcherConfigureChef 
-  def initialize(app, env)
-    @app = app
-  end
-
-  def call(env)
-    # Do this even if fetch is disabled
-
-    require 'pp'
-    # there has got to be a better way
-    provisioners_list = env[:vm].config.to_hash["keys"][:vm].provisioners 
-
-    chef_solo = provisioners_list.find { |p| p.shortcut === :chef_solo }
-    if !chef_solo.nil? then
-      solo_cfg = chef_solo.config
-      
-      if solo_cfg.roles_path.nil? then
-        solo_cfg.roles_path = "combined/roles"
-      else
-        env[:ui].warn "Auto-checkout is keeping your custom chef-solo role path"
-      end
-
-      if solo_cfg.data_bags_path.nil? then
-        solo_cfg.data_bags_path = "combined/data_bags"
-      else
-        env[:ui].warn "Auto-checkout is keeping your custom chef-solo data_bags path"
-      end
-
-      # Cookbooks has a default
-      if solo_cfg.cookbooks_path === ["cookbooks", [:vm, "cookbooks"]] then
-        # Read from filesystem
-        if !File.exists?(".cookbook-order") then
-          env[:ui].error "Auto-checkout could not a .cookbook-order file.  You need to run provision with autocheckout enabled at least once (or else specify your own cookbook path)"
-        end
-
-        cbs = []
-        IO.readlines(".cookbook-order").each { |line| cbs.push line.chomp }
-        solo_cfg.cookbooks_path = cbs
-      else
-        env[:ui].warn "Auto-checkout is keeping your custom chef-solo cookbook path"
-      end
-
+  # This is a Vagrant middleware plugin, which implements fetching the cookbooks
+  # http://vagrantup.com/v1/docs/extending/middleware.html
+  class FetchHook
+    def initialize(app, env)
+      @app = app
     end
 
-    # Continue daisy chain
-    @app.call(env) 
-  end
-end
+    def call(env)
+      if !env[:global_config].cookbook_fetcher.disable then
+        if !env[:global_config].cookbook_fetcher.url.nil? then
+          fetch_checkouts env
+        else
+          env[:ui].warn "No URL set for auto-checkout, skipping"
+        end
+      else
+        env[:ui].info "Auto-checkout disabled, skipping"
+      end
 
-Vagrant.actions[:provision].insert(Vagrant::Action::VM::Provision, CookbookFetcherConfigureChef)
-Vagrant.actions[:start].insert(Vagrant::Action::VM::Provision, CookbookFetcherConfigureChef)
+      # Continue daisy chain
+      @app.call(env) 
+    end
+
+    def fetch_checkouts (env) 
+      url = env[:global_config].cookbook_fetcher.url
+      env[:ui].info "Fetching checkout list from #{url}"
+    
+      checkouts = CookbookFetcher.fetch_checkout_list url
+      CookbookFetcher.perform_checkouts checkouts
+      CookbookFetcher.update_links checkouts
+    end
+  end
+
+  # Install fetcher hook
+  Vagrant.actions[:provision].insert(Vagrant::Action::General::Validate, CookbookFetcher::FetchHook)
+  # Note that :up includes :start ( see https://github.com/mitchellh/vagrant/blob/master/lib/vagrant/action/builtin.rb )
+  Vagrant.actions[:start].insert(Vagrant::Action::General::Validate, CookbookFetcher::FetchHook)
+
+
+  # Middleware to tweak chef config
+  # Injects auto-checkout-derived chef-solo config
+  class ConfigureChef 
+    def initialize(app, env)
+      @app = app
+    end
+
+    def call(env)
+      # Do this even if fetch is disabled
+
+      # there has got to be a better way
+      provisioners_list = env[:vm].config.to_hash["keys"][:vm].provisioners 
+
+      chef_solo = provisioners_list.find { |p| p.shortcut === :chef_solo }
+      if !chef_solo.nil? then
+        solo_cfg = chef_solo.config
+      
+        # TODO - need cwd block
+
+        if solo_cfg.roles_path.nil? then
+          solo_cfg.roles_path = "combined/roles"
+        else
+          env[:ui].warn "Auto-checkout is keeping your custom chef-solo role path"
+        end
+
+        if solo_cfg.data_bags_path.nil? then
+          solo_cfg.data_bags_path = "combined/data_bags"
+        else
+          env[:ui].warn "Auto-checkout is keeping your custom chef-solo data_bags path"
+        end
+
+        # Cookbooks has a default
+        if solo_cfg.cookbooks_path === ["cookbooks", [:vm, "cookbooks"]] then
+          # Read from filesystem
+          if !File.exists?(".cookbook-order") then
+            env[:ui].error "Auto-checkout could find not a .cookbook-order file.  You need to run provision with autocheckout enabled at least once (or else specify your own cookbook path)"
+          end
+
+          cbs = []
+          IO.readlines(".cookbook-order").each { |line| cbs.push line.chomp }
+          solo_cfg.cookbooks_path = cbs
+        else
+          env[:ui].warn "Auto-checkout is keeping your custom chef-solo cookbook path"
+        end
+
+      end
+
+      # Continue daisy chain
+      @app.call(env) 
+    end
+  end
+
+  Vagrant.actions[:provision].insert(Vagrant::Action::VM::Provision, CookbookFetcher::ConfigureChef)
+  Vagrant.actions[:start].insert(Vagrant::Action::VM::Provision, CookbookFetcher::ConfigureChef)
+
+end
