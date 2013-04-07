@@ -5,7 +5,7 @@ A Vagrant plugin to automatically fetch cookbooks, roles, and such whenever you 
 
 ## Behavior
 
-Once you set a URL that provides a list of checkouts, this plugin will create two directory trees:
+Once you set a URL in your Vagrantfile that provides a list of checkouts, this plugin will create two directory trees (checkouts and combined):
 
    my-vagrant-project
     |...Vagrantfile
@@ -16,6 +16,7 @@ Once you set a URL that provides a list of checkouts, this plugin will create tw
         |...roles
         |...nodes
         |...data_bags
+        |...specs
 
 The plugin will loop through the list of checkouts, perform a clone/checkout or pull/update to make sure the checkout exists in the 'checkouts' directory. 
 
@@ -38,7 +39,7 @@ The fields are: VCS,repo address, directory name, branch, credentials
 
 ## Configuration
 
-### config.auto_checkout.url
+### config.cookbook_fetcher.url
 
 Default: none.
 
@@ -46,11 +47,11 @@ URL that replies with a CSV file containing the list of checkouts.
 
 If absent, no fetch occurs.
 
-### config.auto_checkout.disable
+### config.cookbook_fetcher.disable
 
 Default: false
 
-If true, no checkout will be be run.  This can be useful if you're provisioning frequently and making local changes to your recipes.
+If true, no checkout will be be run.  This can be useful if you're provisioning frequently and making local changes to your recipes; if you use git rebase, your build will break whenever you have a local change and an incoming change at the same time.
 
 Even if the fetch is disabled, this plugin will still try to tell chef-solo about your cookbook, role, and data_bag paths, unless you override them.
 
