@@ -1,4 +1,8 @@
 
+require 'pry'
+require 'pry-debugger'
+
+
 module CookbookFetcher
 
   # http://vagrantup.com/v1/docs/extending/configuration.html
@@ -8,6 +12,28 @@ module CookbookFetcher
   end
   Vagrant.config_keys.register(:cookbook_fetcher) { CookbookFetcher::Config }
 
+  # Utility method - reads the config, fetches the checkout list, does the checkout, and does the crosslinks.
+  def perform_fetch (global_config, logger)
+
+    unless global_config.cookbook_fetcher then
+      logger.warn "No config.cookbook_fetcher section found in Vagrantfile - skipping checkouts"
+      return
+    end
+
+    url = global_config.cookbook_fetcher.url
+    unless url then
+      logger.warn "No config.cookbook_fetcher.url value found in Vagrantfile - skipping checkouts"
+      return
+    end
+
+    logger.info "Fetching checkout list from #{url}"
+    
+    # TODO cwd call
+    checkouts = CookbookFetcher.fetch_checkout_list url
+    CookbookFetcher.perform_checkouts checkouts
+    CookbookFetcher.update_links checkouts
+  end
+  module_function :perform_fetch
 
   # Utility method, fetches checkout list, parses it, 
   # and writes cookbook order to a file in the current working directory.
@@ -188,26 +214,13 @@ module CookbookFetcher
 
     def call(env)
       if !env[:global_config].cookbook_fetcher.disable then
-        if !env[:global_config].cookbook_fetcher.url.nil? then
-          fetch_checkouts env
-        else
-          env[:ui].warn "No URL set for auto-checkout, skipping"
-        end
+        CookbookFetcher.perform_fetch(env[:global_config], env[:ui])
       else
         env[:ui].info "Auto-checkout disabled, skipping"
       end
 
       # Continue daisy chain
       @app.call(env) 
-    end
-
-    def fetch_checkouts (env) 
-      url = env[:global_config].cookbook_fetcher.url
-      env[:ui].info "Fetching checkout list from #{url}"
-    
-      checkouts = CookbookFetcher.fetch_checkout_list url
-      CookbookFetcher.perform_checkouts checkouts
-      CookbookFetcher.update_links checkouts
     end
   end
 
@@ -271,5 +284,13 @@ module CookbookFetcher
 
   Vagrant.actions[:provision].insert(Vagrant::Action::VM::Provision, CookbookFetcher::ConfigureChef)
   Vagrant.actions[:start].insert(Vagrant::Action::VM::Provision, CookbookFetcher::ConfigureChef)
+
+  class CheckoutCommand < Vagrant::Command::Base
+    def execute
+      CookbookFetcher.perform_fetch(@env.config.global, @logger)
+    end
+  end
+  Vagrant.commands.register(:checkout) { CookbookFetcher::CheckoutCommand }
+
 
 end
