@@ -1,5 +1,16 @@
 
-2012-09-25 0.0.6 Clinton Wolfe <clintoncwolfe at gmail dot com> 
+2013-04-08 0.0.8 Clinton Wolfe <clintoncwolfe at gmail dot com>
+   * Correct rspec directory name specs => spec
+   * Update changelog with changes for 0.0.7
+
+2013-04-07 0.0.7 Clinton Wolfe <clintoncwolfe at gmail dot com>
+   * Ensure that checkout always occurs relative to Vagrant project root,
+	not current working directory
+   * Link 'specs' directories for rspec testing
+   * Add hook to run as command (vagrant checkout)
+   * Constrain to be vagrant 1.0.x plugin
+
+2012-09-25 0.0.6 Clinton Wolfe <clintoncwolfe at gmail dot com>
 
    * Add changelog
 
@@ -8,6 +19,4 @@
 2012-09-21 0.0.5 Clinton Wolfe <clintoncwolfe at gmail dot com>
 
    * Add ability to specify a commit, not just a branch, in checkout lists (Graham Knop)
-   
    * Make databag combined symlinks properly descend one directory down (Clinton Wolfe)
-   

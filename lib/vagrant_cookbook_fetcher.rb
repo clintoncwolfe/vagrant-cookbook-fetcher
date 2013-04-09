@@ -142,7 +142,7 @@ module CookbookFetcher
   # already been performed, creates the combined/ directory in the current directory,
   # and symlinks in the roles, nodes, etc.
   def update_links (checkouts,logger) 
-    things_to_link = ["roles", "nodes", "handlers", "data_bags", "specs"]
+    things_to_link = ["roles", "nodes", "handlers", "data_bags", "spec"]
     logger.info "Updating links to #{things_to_link.join(', ')}"
 
     if !Dir.exists?("combined") then Dir.mkdir("combined") end
