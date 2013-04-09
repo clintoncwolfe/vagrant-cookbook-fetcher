@@ -1,3 +1,7 @@
+2013-04-09 0.0.9 Clinton Wolfe <clintoncwolfe at gmail dot com>
+   * Rewrite combined/ linker to be more flexible
+   * Create two spec directories in combined/ - one symlinked from the perspective of
+	 the VM host, and one from the perspective of the VM guest
 
 2013-04-08 0.0.8 Clinton Wolfe <clintoncwolfe at gmail dot com>
    * Correct rspec directory name specs => spec

@@ -2,7 +2,7 @@
 Gem::Specification.new do |s|
   s.name        = 'vagrant-cookbook-fetcher'
 
-  s.version     = '0.0.8'
+  s.version     = '0.0.9'
   s.add_runtime_dependency 'vagrant', '<= 1.0.7'
 
   s.date        = '2013-04-06'
