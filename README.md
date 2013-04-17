@@ -7,22 +7,28 @@ A Vagrant plugin to automatically fetch cookbooks, roles, and such whenever you 
 
 Once you set a URL in your Vagrantfile that provides a list of checkouts, this plugin will create two directory trees (checkouts and combined):
 
-   my-vagrant-project
-    |...Vagrantfile
-    |...checkouts
-    |   |...checkout-foo
-    |   |...checkout-bar
-    |...combined
-        |...roles
-        |...nodes
-        |...data_bags
-        |...specs
+    my-vagrant-project
+     |...Vagrantfile
+     |...checkouts
+     |   |...checkout-foo
+     |   |...checkout-bar
+     |...combined
+         |...roles
+         |...nodes
+         |...data_bags
+         |...spec_ext
 
 The plugin will loop through the list of checkouts, perform a clone/checkout or pull/update to make sure the checkout exists in the 'checkouts' directory. 
 
 Next, the plugin creates the 'combined' directory.  Each checkout that has a roles directory gets its roles symlinked to; likewise for data bags and nodes.  This feature allows you to have roles defined in multiple checkouts, and used from your local project.  In the event of name collisions, the later checkout wins.  The links are specially constructed to be valid from within the VM, so long as the v-root remains mounted at /vagrant .
 
 Finally, the plugin configures chef-solo, setting the cookbook path (to an ordered array of the checkouts's cookbooks directories), the roles path (to the combined path), and the databags path (to the combined path).  
+
+## Command Integration
+
+The plugin integrates into the existing 'vagrant up', 'vagrant start', and 'vagrant provision' commands.  When running these commands, the cookbooks will be updated before the provision occurs.  Note that if no provision would occur (eg, using 'vagrant up' to resume a suspended VM), then no checkout will occur.
+
+In addition, a new command is added, 'vagrant checkout', which simply runs the checkout and updates the symlinks, without doing a provision.
 
 ## Checkout List Format
 
