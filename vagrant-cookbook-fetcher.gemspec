@@ -1,7 +1,7 @@
 # -*-ruby-*-
 
 $:.push File.expand_path(File.join(File.dirname(__FILE__), "lib"))
-require "vagrant-cookbook-fetcher"
+require "vagrant-cookbook-fetcher/version"
 
 Gem::Specification.new do |s|
   s.name              = VagrantPlugins::CookbookFetcher::NAME
