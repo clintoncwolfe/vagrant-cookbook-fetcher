@@ -12,5 +12,5 @@ Gem::Specification.new do |s|
   s.rubyforge_project = VagrantPlugins::CookbookFetcher::NAME
   s.summary           = VagrantPlugins::CookbookFetcher::DESCRIPTION
   s.description       = VagrantPlugins::CookbookFetcher::SUMMARY
-  s.files = ["README.md"] + Dir["lib/**/*.*"]
+  s.files = ["README.md"] + Dir["lib/**/*.rb"]
 end
