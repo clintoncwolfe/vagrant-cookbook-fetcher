@@ -6,8 +6,7 @@ module VagrantPlugins
     AUTHOR_EMAIL    = "clintoncwolfe [at] gmail [dot] com"
     SUMMARY         = "Fetch your Chef cookbooks whenever you provision"
     DESCRIPTION     = "Whenever you run start, up, or provision, this plugin will dynamically fetch a list of checkouts from a URL; checkout each one; then create a combined roles directory, with symlinks."
-    URL             = "http://github.com/clintoncwolfe/vagrant-rspec-ci"
-    
+    URL             = "http://github.com/clintoncwolfe/vagrant-cookbook-fetcher"    
   end
 end
 
