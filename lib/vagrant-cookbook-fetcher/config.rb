@@ -29,8 +29,9 @@ module VagrantPlugins
         unless @disable then
           puts "DEBUG- VCF config, disable is false"
           puts "DEBUG- VCF config, url is #{@url.to_s}"
-          # Must have a URL
-          errors << "vagrant-cookbook-fetcher plugin requires a config parameter, 'url', which is missing."  if !@url
+          if @url == UNSET_VALUE
+            errors << "vagrant-cookbook-fetcher plugin requires a config parameter, 'url', which is missing."
+          end
         end
 
         { 'Cookbook Fetcher' => errors }
