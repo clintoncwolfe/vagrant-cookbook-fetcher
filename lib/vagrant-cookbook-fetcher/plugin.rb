@@ -27,10 +27,10 @@ module VagrantPlugins
         end
       end
 
-      #command "checkout" do
-      #  require_relative "command"
-      #  Command
-      #end
+      command "checkout" do
+        require_relative "command"
+        CheckoutCommand
+      end
 
     end
   end
