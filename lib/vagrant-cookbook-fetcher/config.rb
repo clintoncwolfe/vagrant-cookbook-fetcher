@@ -1,8 +1,8 @@
 module VagrantPlugins
   module CookbookFetcher
     class Config < Vagrant.plugin("2", :config)
-      attr_writer :url
-      attr_writer :disable
+      attr_accessor :url
+      attr_accessor :disable
 
       def initialize
         super
