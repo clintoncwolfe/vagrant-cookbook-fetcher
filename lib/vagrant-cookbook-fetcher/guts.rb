@@ -33,9 +33,9 @@ module VagrantPlugins
       
       logger.info "Fetching checkout list from #{url}"
 
-      # This is idiotic, but open() fails on URLs like 'file:///...'
+      # This is idiotic, but open-uri's open() fails on URLs like 'file:///...'
       # It does fine on absolute paths, though.
-      url.gsub(/^file:\/\//, '')
+      url.gsub!(/^file:\/\//, '')
 
       open(url, {:ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE }) do |resp|
         resp.each do |line|
@@ -68,9 +68,31 @@ module VagrantPlugins
     end
     module_function :fetch_checkout_list
 
+    def safe_run (cmd, logger, ignore_regex = nil)
+      if logger.respond_to?(:debug) 
+        logger.debug("Running #{cmd}")
+      end
+      output = `#{cmd} 2>&1`
+      unless $?.success? then
+        pwd = Dir.pwd
+        logger.error("Got exit code #{$?.exitstatus} while running '#{cmd}' in '#{pwd}'")
+        logger.error("Output: #{output}")
+        exit $?.exitstatus
+      end
+      if (ignore_regex)
+        output.gsub!(ignore_regex, '')
+      end
+      output.chomp!
+      unless output.empty? 
+        puts output
+      end
+    end
+    module_function :safe_run
+
     # Utility method.  Based on a parsed checkout list, 
     # performs each of the checkouts, creating the checkouts/ directory in 
     # the current directory.
+
     def perform_checkouts (checkouts,logger)
 
       if !Dir.exists?("checkouts") then Dir.mkdir("checkouts") end
@@ -78,40 +100,42 @@ module VagrantPlugins
       Dir.chdir("checkouts") do  
         checkouts[:by_dir].each do |dir, info|
           logger.info "Updating checkout '#{dir}'"
-          if info[:vcs] == 'git' then
 
+          if info[:vcs] == 'git' then
             if Dir.exists?(info[:dir]) then
               # pull
               Dir.chdir(info[:dir]) do
                 # TODO ignores git creds
                 cmd = "git remote set-url origin #{info[:repo]}"
-                unless system cmd then raise "Could not '#{cmd}'" end
+                safe_run(cmd, logger)
                 cmd = "git fetch origin"
-                unless system cmd then raise "Could not '#{cmd}'" end
+                safe_run(cmd, logger)
+
                 local_branch = `git rev-parse --verify --symbolic-full-name #{info[:branch]} 2> /dev/null`.rstrip
                 # no local branch
                 if ! $?.success? then
                   cmd = "git rev-parse --verify -q --symbolic-full-name origin/#{info[:branch]}"
                   unless system cmd then raise "Could not find branch or commit #{info[:branch]}" end
                   cmd = "git checkout -b #{info[:branch]} origin/#{info[:branch]}"
-                  unless system cmd then raise "Could not '#{cmd}'" end
-                  # no branch
+                  safe_run(cmd, logger)
+
                 elsif local_branch.empty? then
+                  # no branch
                   cmd = "git checkout #{info[:branch]}"
-                  unless system cmd then raise "Could not '#{cmd}'" end
-                  # local branch already exists
+                  safe_run(cmd, logger)
                 else
+                  # local branch already exists
                   cmd = "git checkout #{info[:branch]}"
-                  unless system cmd then raise "Could not '#{cmd}'" end
+                  safe_run(cmd, logger, /Already on '.+'/)
                   cmd = "git merge origin/#{info[:branch]}"
-                  unless system cmd then raise "Could not '#{cmd}'" end
+                  safe_run(cmd, logger, /Already up-to-date\./)
                 end
               end
             else
               # clone
               # can't use --branch because it won't work with commit ids
               cmd = "git clone --no-checkout #{info[:repo]} #{info[:dir]}"
-              unless system cmd then raise "Could not '#{cmd}'" end
+              safe_run(cmd, logger)
               Dir.chdir(info[:dir]) do
                 cmd = "git rev-parse --verify -q origin/#{info[:branch]}"
                 # branch
@@ -119,15 +143,15 @@ module VagrantPlugins
                   current_branch=`git symbolic-ref HEAD 2> /dev/null`.rstrip
                   if $?.success? && current_branch == "refs/heads/#{info[:branch]}" then
                     cmd = "git checkout #{info[:branch]}"
-                    unless system cmd then raise "Could not '#{cmd}'" end
+                    safe_run(cmd, logger)
                   else
                     cmd = "git checkout -B #{info[:branch]} origin/#{info[:branch]}"
-                    unless system cmd then raise "Could not '#{cmd}'" end
+                    safe_run(cmd, logger)
                   end
                   #commit
                 else
                   cmd = "git checkout #{info[:branch]}"
-                  unless system cmd then raise "Could not '#{cmd}'" end
+                  safe_run(cmd, logger)
                 end
               end
             end
