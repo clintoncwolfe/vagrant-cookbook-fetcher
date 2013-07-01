@@ -1,4 +1,3 @@
-
 module VagrantPlugins
   module CookbookFetcher
     class Plugin < Vagrant.plugin("2")
@@ -16,10 +15,10 @@ module VagrantPlugins
       ].each do |chain| 
 
         # This hook performs the actual fetch
-        #action_hook(:cookbook_fetcher_do_fetch, chain) do |hook|
-        #  require_relative "action_fetch_cookbooks"
-        #  hook.before(Vagrant::Action::Builtin::Provision, VagrantPlugins::CookbookFetcher::FetchCookbooksAction)
-        #end
+        action_hook(:cookbook_fetcher_do_fetch, chain) do |hook|
+          require_relative "action_fetch_cookbooks"
+          hook.before(Vagrant::Action::Builtin::Provision, VagrantPlugins::CookbookFetcher::FetchCookbooksAction)
+        end
         
         # This hook configures chef-solo to use a special set of paths
         action_hook(:cookbook_fetcher_set_chef_paths, chain) do |hook|
