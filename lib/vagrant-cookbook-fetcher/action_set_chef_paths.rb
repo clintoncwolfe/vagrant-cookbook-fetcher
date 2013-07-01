@@ -25,10 +25,14 @@ module VagrantPlugins
               return
             end
 
+            # For cookbook path, Vagrant defaults to this:
+            # [[:host, "cookbooks"], [:vm, "cookbooks"]]
+            # But we're overriding that.
+            solo_cfg.cookbooks_path = []
+
             # Read from filesystem
-            cbs = []
             IO.readlines(".cookbook-order").each do |line| 
-              cbs.push [ :host, line.chomp ]
+              solo_cfg.cookbooks_path.push [ :host, line.chomp ]
             end
 
           end
@@ -36,7 +40,6 @@ module VagrantPlugins
 
         # Continue daisy chain
         @app.call(env) 
-        
       end
     end
   end
