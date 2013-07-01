@@ -1,12 +1,5 @@
-#require 'pry'
-#require 'pry-debugger'
-
 module VagrantPlugins
   module CookbookFetcher
-    class MissingConfigParam < Vagrant::Errors::VagrantError
-      error_key :missing_config_param
-    end
-
     class Config < Vagrant.plugin("2", :config)
       attr_writer :url
       attr_writer :disable
@@ -18,17 +11,12 @@ module VagrantPlugins
       end
 
       def finalize!
-        puts "DEBUG- In VCF config.rb finalize"
         @disable = false if @disable == UNSET_VALUE
       end
 
       def validate(machine)
-        puts "DEBUG- In VCF config.rb validate"
         errors = []
-        puts "DEBUG- VCF config, disable is #{@disable}"
         unless @disable then
-          puts "DEBUG- VCF config, disable is false"
-          puts "DEBUG- VCF config, url is #{@url.to_s}"
           if @url == UNSET_VALUE
             errors << "vagrant-cookbook-fetcher plugin requires a config parameter, 'url', which is missing."
           end
