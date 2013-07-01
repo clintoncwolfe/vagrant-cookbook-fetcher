@@ -32,6 +32,11 @@ module VagrantPlugins
       checkouts = { :by_dir => {}, :cookbook_list => [] } 
       
       logger.info "Fetching checkout list from #{url}"
+
+      # This is idiotic, but open() fails on URLs like 'file:///...'
+      # It does fine on absolute paths, though.
+      url.gsub(/^file:\/\//, '')
+
       open(url, {:ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE }) do |resp|
         resp.each do |line|
           line.chomp!
