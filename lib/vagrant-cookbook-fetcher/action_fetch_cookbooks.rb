@@ -12,7 +12,11 @@ module VagrantPlugins
 
         vcf_config = env[:machine].config.cookbook_fetcher
         unless vcf_config.disable then
-          CookbookFetcher.perform_fetch(env)
+          CookbookFetcher.perform_fetch(\
+                                        :url => env[:machine].config.cookbook_fetcher.url,
+                                        :logger => env[:ui],
+                                        :path => env[:root_path]
+                                        )
         else
           env[:ui].info "Cookbook fetching disabled, skipping"
         end

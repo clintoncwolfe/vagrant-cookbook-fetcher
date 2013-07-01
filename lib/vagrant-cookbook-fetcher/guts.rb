@@ -3,17 +3,17 @@ module VagrantPlugins
 
     # Utility method - reads the config, fetches the checkout list, 
     # does the checkout, and does the crosslinks.  Expects cwd to be the root_path.
-    def perform_fetch (env)
-      vm_config = env[:machine].config
-      logger = env[:ui]
+    def perform_fetch (args = {})
+      url    = args[:url]
+      logger = args[:logger]
+      path   = args[:path]
 
-      url = vm_config.cookbook_fetcher.url
       unless url then
-        logger.warn "No config.cookbook_fetcher.url value found in Vagrantfile - skipping checkouts"
+        logger.warn "No cookbook_fetcher URL specified - skipping checkouts"
         return
       end
     
-      Dir.chdir(env[:root_path]) do
+      Dir.chdir(path) do
         checkouts = CookbookFetcher.fetch_checkout_list(url,logger)
         CookbookFetcher.perform_checkouts(checkouts,logger)
         CookbookFetcher.update_links(checkouts,logger)
