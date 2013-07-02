@@ -3,6 +3,12 @@ vagrant-cookbook-fetcher
 
 A Vagrant plugin to automatically fetch cookbooks, roles, and such whenever you run vagrant provision, up or start.
 
+## Compatibility
+
+For vagrant 1.0.x, use vagrant-cookbook-fetcher 0.0.x .
+For vagrant 1.1.x, use vagrant-cookbook-fetcher 0.1.x .  It may or may not work.
+For vagrant 1.2.x, use vagrant-cookbook-fetcher 0.1.x .
+
 ## Behavior
 
 Once you set a URL in your Vagrantfile that provides a list of checkouts, this plugin will create two directory trees (checkouts and combined):
