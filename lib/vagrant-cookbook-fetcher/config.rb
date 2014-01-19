@@ -16,10 +16,9 @@ module VagrantPlugins
 
       def validate(machine)
         errors = []
-        unless @disable then
-          if @url == UNSET_VALUE
-            errors << "vagrant-cookbook-fetcher plugin requires a config parameter, 'url', which is missing."
-          end
+        if @url == UNSET_VALUE
+          # Disable vagrant cookbook fetcher if we don't specify a URL
+          @disable = true
         end
 
         { 'Cookbook Fetcher' => errors }
