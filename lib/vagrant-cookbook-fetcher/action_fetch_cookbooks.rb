@@ -7,22 +7,22 @@ module VagrantPlugins
       def initialize(app, env)
         @app = app
       end
-      
+
       def call(env)
 
         vcf_config = env[:machine].config.cookbook_fetcher
-        unless vcf_config.disable then
+        if vcf_config.url then
           CookbookFetcher.perform_fetch(\
-                                        :url => env[:machine].config.cookbook_fetcher.url,
+                                        :url => vcf_config.url,
                                         :logger => env[:ui],
                                         :path => env[:root_path]
                                         )
         else
           env[:ui].info "Cookbook fetching disabled, skipping"
         end
-        
+
         # Continue daisy chain
-        @app.call(env)        
+        @app.call(env)
       end
     end
   end

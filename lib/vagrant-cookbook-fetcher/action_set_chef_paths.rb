@@ -5,13 +5,13 @@ module VagrantPlugins
       def initialize(app, env)
         @app = app
       end
-      
+
       def call(env)
         # there has got to be a better way
         provisioners_list = env[:machine].config.vm.provisioners
         chef_solo = provisioners_list.find { |p| p.name === :chef_solo }
 
-        if chef_solo then
+        if chef_solo and env[:machine].config.cookbook_fetcher.url then
           solo_cfg = chef_solo.config
 
           Dir.chdir(env[:root_path]) do
@@ -31,7 +31,7 @@ module VagrantPlugins
             solo_cfg.cookbooks_path = []
 
             # Read from filesystem
-            IO.readlines(".cookbook-order").each do |line| 
+            IO.readlines(".cookbook-order").each do |line|
               solo_cfg.cookbooks_path.push [ :host, line.chomp ]
             end
 
@@ -39,7 +39,7 @@ module VagrantPlugins
         end
 
         # Continue daisy chain
-        @app.call(env) 
+        @app.call(env)
       end
     end
   end
