@@ -1,6 +1,6 @@
 
-require "vagrant-cookbook-fetcher/version"
-require "vagrant-cookbook-fetcher/plugin"
+require_relative "vagrant-cookbook-fetcher/version"
+require_relative "vagrant-cookbook-fetcher/plugin"
 
 module VagrantPlugins
   module CookbookFetcher
