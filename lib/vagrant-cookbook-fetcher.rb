@@ -1,4 +1,3 @@
-
 require_relative "vagrant-cookbook-fetcher/version"
 require_relative "vagrant-cookbook-fetcher/plugin"
 

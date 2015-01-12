@@ -1,7 +1,7 @@
 module VagrantPlugins
   module CookbookFetcher
     NAME            = "vagrant-cookbook-fetcher"
-    VERSION         = "0.1.0"
+    VERSION         = "0.1.1"
     AUTHOR          = "Clinton Wolfe"
     AUTHOR_EMAIL    = "clintoncwolfe [at] gmail [dot] com"
     SUMMARY         = "Fetch your Chef cookbooks whenever you provision"

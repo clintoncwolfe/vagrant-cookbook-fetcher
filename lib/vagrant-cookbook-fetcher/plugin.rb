@@ -8,10 +8,10 @@ module VagrantPlugins
         Config
       end
 
-      # We want to act on 'up' and 'provision'
       [
        :machine_action_up,
-       :machine_action_provision
+       :machine_action_provision,
+       :machine_action_reload,
       ].each do |chain| 
 
         # This hook performs the actual fetch
