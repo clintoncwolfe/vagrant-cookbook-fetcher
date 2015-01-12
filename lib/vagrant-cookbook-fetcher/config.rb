@@ -11,7 +11,14 @@ module VagrantPlugins
       end
 
       def finalize!
-        @disable = false if @disable == UNSET_VALUE
+        if Vagrant.has_plugin?('vagrant-berkshelf') 
+          # TODO: would ideally detect whether berkshelf is actually enabled
+          # TODO: this ui call seems to alkways get swallowed
+          ui.info('vagrant-berkshelf detected, disabling vagrant-cookbook-fetcher')
+          @disable = true
+        else 
+          @disable = false if @disable == UNSET_VALUE
+        end
       end
 
       def validate(machine)
