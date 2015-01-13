@@ -1,13 +1,15 @@
 vagrant-cookbook-fetcher
 ========================
 
+DEPRECATED - you should really use something like vagrant-berkshelf.  This thing came from a darker time.
+
 A Vagrant plugin to automatically fetch cookbooks, roles, and such whenever you run vagrant provision, up or start.
 
 ## Compatibility
 
 For vagrant 1.0.x, use vagrant-cookbook-fetcher 0.0.x .
 For vagrant 1.1.x, use vagrant-cookbook-fetcher 0.1.x .  It may or may not work.
-For vagrant 1.2.x, use vagrant-cookbook-fetcher 0.1.x .
+For vagrant 1.2.x+, use vagrant-cookbook-fetcher 0.1.+ .
 
 ## Behavior
 
@@ -43,11 +45,11 @@ In addition, a new command is added, 'vagrant checkout', which simply runs the c
     git,https://github.com/opscode-cookbooks/php.git,opscode-php/cookbooks/php,master,NONE
 
 The fields are: VCS,repo address, directory name, branch, credentials
- * VCS may be either 'git' or 'svn' (TODO).
+ * VCS may be either 'git' or nothing else, too bad.
  * repo address is the identifier of the repository from which to obtain the checkout.
  * directory name is the path under <vagrant-root>/checkouts to clone/checkout into.  It may contain slashes.
  * branch is the name of the git branch.  Leave blank for svn (use repo address for svn branching)
- * (this feature is TODO) credentials is the method to authenticate to the repo server.  NONE means use no authentication.  AGENT means to rely on a running ssh-agent to provide credentials.  All other values are taken to specify the location of a SSH private key, relative to <vagrant-root>, that should be used with a GIT_SSH wrapper.
+ * credentials column is unused.  Zing!
 
 ## Configuration
 
@@ -65,11 +67,11 @@ Default: false
 
 If true, no checkout will be be run.  This can be useful if you're provisioning frequently and making local changes to your recipes; if you use git rebase, your build will break whenever you have a local change and an incoming change at the same time.
 
-Even if the fetch is disabled, this plugin will still try to tell chef-solo about your cookbook, role, and data_bag paths, unless you override them.
+If vagrant-berkshelf is detected, this plugin will disable itself, as you should be using vagrant-berkshelf anyway.
 
 ## TODO
 
- * Add svn support
- * Actually respect the credentials column
- * Make checkout list format less awful, add headers
- * support chef, not just chef-solo
+ * Move everyone over to vagrant-berkshelf or PolicyFiles or something.
+
+
+
