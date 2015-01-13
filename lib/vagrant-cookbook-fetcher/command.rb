@@ -1,8 +1,5 @@
 require_relative 'guts'
 
-# DEBUG
-require 'byebug'
-
 module VagrantPlugins
   module CookbookFetcher
     class CheckoutCommand < Vagrant.plugin("2", "command")
@@ -11,7 +8,6 @@ module VagrantPlugins
         # Oddly, under vagrant ~ 1.4.1, @argv is ['--'].
         # Disappearred by 1.7.2
         scrubbed_args = @argv.reject {|e| e == '--' }
-        byebug
         with_target_vms(scrubbed_args) do |machine|
 
           CookbookFetcher.perform_fetch(
