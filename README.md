@@ -9,7 +9,8 @@ A Vagrant plugin to automatically fetch cookbooks, roles, and such whenever you 
 
 For vagrant 1.0.x, use vagrant-cookbook-fetcher 0.0.x .
 For vagrant 1.1.x, use vagrant-cookbook-fetcher 0.1.x .  It may or may not work.
-For vagrant 1.2.x+, use vagrant-cookbook-fetcher 0.1.+ .
+For vagrant 1.2.x-1.6.x, use vagrant-cookbook-fetcher 0.1.+ .
+For vagrant 1.7.x+, use vagrant-cookbook-fetcher 0.3.+
 
 ## Behavior
 
@@ -26,11 +27,11 @@ Once you set a URL in your Vagrantfile that provides a list of checkouts, this p
          |...data_bags
          |...spec_ext
 
-The plugin will loop through the list of checkouts, perform a clone/checkout or pull/update to make sure the checkout exists in the 'checkouts' directory. 
+The plugin will loop through the list of checkouts, perform a clone/checkout or pull/update to make sure the checkout exists in the 'checkouts' directory.
 
 Next, the plugin creates the 'combined' directory.  Each checkout that has a roles directory gets its roles symlinked to; likewise for data bags and nodes.  This feature allows you to have roles defined in multiple checkouts, and used from your local project.  In the event of name collisions, the later checkout wins.  The links are specially constructed to be valid from within the VM, so long as the v-root remains mounted at /vagrant .
 
-Finally, the plugin configures chef-solo, setting the cookbook path (to an ordered array of the checkouts's cookbooks directories), the roles path (to the combined path), and the databags path (to the combined path).  
+Finally, the plugin configures chef-solo, setting the cookbook path (to an ordered array of the checkouts's cookbooks directories), the roles path (to the combined path), and the databags path (to the combined path).
 
 ## Command Integration
 
@@ -72,6 +73,3 @@ If vagrant-berkshelf is detected, this plugin will disable itself, as you should
 ## TODO
 
  * Move everyone over to vagrant-berkshelf or PolicyFiles or something.
-
-
-
