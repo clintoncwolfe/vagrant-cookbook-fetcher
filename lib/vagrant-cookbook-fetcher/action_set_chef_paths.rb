@@ -8,8 +8,7 @@ module VagrantPlugins
       
       def call(env)
         # there has got to be a better way
-        key = ::Gem::Specification::find_by_name('vagrant').version < Gem::Version.new('1.7.0') ? :name : :type
-        chef_solo = env[:machine].config.vm.provisioners.find { |p| p.send(key) === :chef_solo }
+        chef_solo = env[:machine].config.vm.provisioners.find { |p| p.type === :chef_solo }
         vcf_config = env[:machine].config.cookbook_fetcher
 
         if chef_solo then
