@@ -1,3 +1,6 @@
+2016-03-31 0.3.0 Josh Blancett , <joshblancett at gmail dot com>
+   * Compatibility with Vagrant 1.7+
+
 2013-04-17 0.0.10 Clinton Wolfe <clintoncwolfe at gmail dot com>
    * Update README to include command integration, fix formatting
 
