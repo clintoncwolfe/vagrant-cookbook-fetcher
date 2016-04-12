@@ -1,8 +1,10 @@
+require 'fileutils'
+
 module VagrantPlugins
   module CookbookFetcher
 
     # Utility method - reads the config, fetches the checkout list, 
-    # does the checkout, and does the crosslinks.  Expects cwd to be the root_path.
+    # does the checkout, and does the copying-in.  Expects cwd to be the root_path.
     def perform_fetch (args = {})
       url    = args[:url]
       logger = args[:logger]
@@ -16,7 +18,7 @@ module VagrantPlugins
       Dir.chdir(path) do
         checkouts = CookbookFetcher.fetch_checkout_list(url,logger)
         CookbookFetcher.perform_checkouts(checkouts,logger)
-        CookbookFetcher.update_links(checkouts,logger)
+        CookbookFetcher.update_copies(checkouts,logger)
       end
     end
     module_function :perform_fetch
@@ -165,84 +167,39 @@ module VagrantPlugins
 
     # Utility method - given a parsed checkout list, and assuming the checkout have
     # already been performed, creates the combined/ directory in the current directory,
-    # and symlinks in the roles, nodes, etc.
-    def update_links (checkouts,logger) 
-      things_to_link = {
-        "roles"     => {:vagrant_pov_link => true,  :target_dir => "roles",     :step_in => false },
-        "nodes"     => {:vagrant_pov_link => true,  :target_dir => "nodes",     :step_in => false },
-        "handlers"  => {:vagrant_pov_link => true,  :target_dir => "handlers",  :step_in => false },
-        "data_bags" => {:vagrant_pov_link => true,  :target_dir => "data_bags", :step_in => true  },
-        "spec_ext"  => {:vagrant_pov_link => false, :target_dir => "spec",      :step_in => false },
-        "spec_int"  => {:vagrant_pov_link => true,  :target_dir => "spec",      :step_in => false },
-      }
-      logger.info "Updating links to #{things_to_link.keys.sort.join(', ')}"
+    # and copies in the roles, nodes, etc.
+    def update_copies (checkouts,logger) 
+      things_to_link = [
+        "roles",
+        "nodes",
+        "handlers",
+        "data_bags",
+      ]
+      logger.info "Copying into combined/ #{things_to_link.sort.join(', ')}"
 
       if !Dir.exists?("combined") then Dir.mkdir("combined") end
       Dir.chdir("combined") do  
-
         # Create/clear the subdirs
-        things_to_link.keys.each do |thing|
-          if !Dir.exists?(thing) then Dir.mkdir(thing) end
-          if (things_to_link[thing][:step_in]) then
-            Dir.foreach(thing) do |top_dir|
-              Dir.foreach(thing + '/' + top_dir) do |file|
-                if FileTest.symlink?(file) then File.delete(file) end
-              end
-            end
-          else
-            Dir.foreach(thing) do |file|
-              if FileTest.symlink?(file) then File.delete(file) end
-            end
-          end
+        things_to_link.each do |thing|
+          if Dir.exists?(thing) then FileUtils.rm_rf(thing) end
+          Dir.mkdir(thing)
         end
       end
 
-      # Being careful to go in cookbook order, symlink the files
+      # Being careful to go in cookbook order, copy the files
       checkouts[:cookbook_list].each do |cookbook_dir|
         checkout_dir = (cookbook_dir.split('/'))[1]
-        things_to_link.each do |thing, opts|
-          checkout_thing_dir = "checkouts/#{checkout_dir}/#{opts[:target_dir]}"
+        things_to_link.each do |thing|
+          checkout_thing_dir = "checkouts/#{checkout_dir}/#{thing}"
           combined_dir = "combined/#{thing}"
+
+          # If this checkout has anything to contribute
           if Dir.exists?(checkout_thing_dir) then
-            if opts[:step_in] then
-              Dir.foreach(checkout_thing_dir) do |checkout_top_dir|
-                next unless File.directory?(checkout_thing_dir + '/' + checkout_top_dir)
-                next if checkout_top_dir.start_with?('.')
-                combined_top_dir = combined_dir + '/' + checkout_top_dir
-                if !Dir.exists?(combined_top_dir) then Dir.mkdir(combined_top_dir) end
-                Dir.entries(checkout_thing_dir + '/' + checkout_top_dir).grep(/\.(rb|json)$/).each do |file|
-                  if opts[:vagrant_pov_link] then
-                    # Under vagrant, we see this directory as /vagrant/checkouts/<checkout>/data_bags/<dbag>/<dbag_entry.json>
-                    # Use -f so later checkouts can override earlier ones
-                    cmd = "ln -sf /vagrant/#{checkout_thing_dir + '/' + checkout_top_dir}/#{file} combined/#{thing}/#{checkout_top_dir}/#{file}"
-                    unless system cmd then raise "Could not '#{cmd}'" end
-                  else
-                    # Link as visible to the host machine
-                    # Use -f so later checkouts can override earlier ones
-                    cmd = "ln -sf ../../#{checkout_thing_dir + '/' + checkout_top_dir}/#{file} combined/#{thing}/#{checkout_top_dir}/#{file}"
-                    unless system cmd then raise "Could not '#{cmd}'" end
-                  end
-                end
-              end
-            else
-              Dir.entries(checkout_thing_dir).grep(/\.(rb|json)$/).each do |file|
-                if opts[:vagrant_pov_link] then
-                  # Under vagrant, we see this directory as /vagrant/checkouts/foo/role/bar.rb
-                  # Use -f so later checkouts can override earlier ones
-                  cmd = "ln -sf /vagrant/#{checkout_thing_dir}/#{file} combined/#{thing}/#{file}"
-                  unless system cmd then raise "Could not '#{cmd}'" end
-                else
-                  # Link as visible to the host machine
-                  # Use -f so later checkouts can override earlier ones
-                  cmd = "ln -sf ../../#{checkout_thing_dir}/#{file} combined/#{thing}/#{file}"
-                  unless system cmd then raise "Could not '#{cmd}'" end
-                end                
-              end
-            end
+            FileUtils.cp_r("#{checkout_thing_dir}/.", combined_dir)
           end
         end
       end  
     end
-    module_function :update_links
+    module_function :update_copies
   end
 end
