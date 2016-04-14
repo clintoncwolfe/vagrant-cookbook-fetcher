@@ -1,3 +1,6 @@
+2016-04-14 0.4.0 Clinton Wolfe <clintoncwolfe at gmail dot com>
+   * copy instead of symlink files for rsync compatibility
+
 2016-03-31 0.3.0 Josh Blancett , <joshblancett at gmail dot com>
    * Compatibility with Vagrant 1.7+
 
