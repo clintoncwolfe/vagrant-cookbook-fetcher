@@ -177,11 +177,11 @@ module VagrantPlugins
       ]
       logger.info "Copying into combined/ #{things_to_link.sort.join(', ')}"
 
-      if !Dir.exists?("combined") then Dir.mkdir("combined") end
+      if Dir.exists?("combined") then FileUtils.rm_rf("combined") end
+      Dir.mkdir("combined")
       Dir.chdir("combined") do  
         # Create/clear the subdirs
         things_to_link.each do |thing|
-          if Dir.exists?(thing) then FileUtils.rm_rf(thing) end
           Dir.mkdir(thing)
         end
       end
